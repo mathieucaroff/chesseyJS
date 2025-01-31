@@ -1,0 +1,9 @@
+/*/
+.*
+
+!/asset/
+!/src/
+!.editorconfig
+!.env.example
+!.gitignore
+!.prettier*

@@ -1,0 +1,33 @@
+{
+  "name": "chesseyjs",
+  "version": "1.0.0",
+  "license": "MIT",
+  "repository": {
+    "url": "https://github.com/mathieucaroff/chesseyjs"
+  },
+  "scripts": {
+    "dev": "parcel src/index.html",
+    "build": "parcel build src/index.html",
+    "mcabuild": "parcel build src/index.html --public-url gomoku.d",
+    "check-knip": "knip --dependencies --exports --include files --reporter ./knip-reporter.ts",
+    "prettier": "prettier"
+  },
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.35.0",
+    "lodash": "^4.17.21",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.2.18",
+    "@types/react-dom": "^18.2.18",
+    "knip": "^3.8.4",
+    "parcel": "^2.10.3",
+    "prettier": "^2.7.1",
+    "process": "^0.11.10",
+    "typescript": "^4.7.4"
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+}
