@@ -1,20 +1,23 @@
-import { EntityKind, GameHistory, Move } from "../../type";
-import { State } from "../state/state";
-
-export interface Game {
-  history: GameHistory
-  state: State
-}
-
-export type Turn = 0 | 1
-
 export function createGame(history: GameHistory, state: State): Game {
   return {
     history,
-    state
+    state,
   }
 }
 
-export function move(ax: number, ay: number, bx: number, by: number, kind: EntityKind, takeValue = 0): Move {
-  return { ax, ay, bx, by, kind, takeValue }
+/**
+ * Lower case letters are white pieces, upper case letters are black pieces.
+ * @returns The chess board in its initial state.
+ */
+export function initialBoard() {
+  return [
+    ..."rnbqkbnr",
+    ..."pppppppp",
+    ..."________",
+    ..."________",
+    ..."________",
+    ..."________",
+    ..."PPPPPPPP",
+    ..."RNBQKBNR",
+  ]
 }
