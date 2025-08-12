@@ -1,6 +1,6 @@
 import { getNotation } from "../notation/notation"
 
-function move(
+function makeMove(
   x: number,
   y: number,
   nx: number,
@@ -16,7 +16,7 @@ function move(
     ny,
     kind,
     special,
-    notation: getNotation(x, y, nx, ny, kind, special, state),
+    notation: getNotation({ x, y, nx, ny, kind, special }, state),
   }
 }
 
@@ -94,19 +94,19 @@ export function getRawAvailableMoveList(state: State): MoveOptionList {
         const square = state.board[ny][nx]
         if (dx === 0) {
           if (square === "_") {
-            availableMoveList.push(move(x, y, nx, ny, "p", "", state))
+            availableMoveList.push(makeMove(x, y, nx, ny, "p", "", state))
             ny += dy
             if (y === (state.turn === "white" ? 1 : 6)) {
               if (state.board[ny][nx] === "_") {
                 availableMoveList.push(
-                  move(x, y, nx, ny, "p", "longPawnMove", state),
+                  makeMove(x, y, nx, ny, "p", "longPawnMove", state),
                 )
               }
             }
           }
         } else {
           if (isEnnemy(square)) {
-            availableMoveList.push(move(x, y, nx, ny, "p", "", state))
+            availableMoveList.push(makeMove(x, y, nx, ny, "p", "", state))
           }
         }
       })
@@ -131,9 +131,9 @@ export function getRawAvailableMoveList(state: State): MoveOptionList {
           }
           let square = state.board[ny][nx]
           if (square === "_") {
-            availableMoveList.push(move(x, y, nx, ny, kind, "", state))
+            availableMoveList.push(makeMove(x, y, nx, ny, kind, "", state))
           } else if (isEnnemy(square)) {
-            availableMoveList.push(move(x, y, nx, ny, kind, "", state))
+            availableMoveList.push(makeMove(x, y, nx, ny, kind, "", state))
             return
           } else {
             // the piece is an ally, we cannot take it
@@ -146,7 +146,7 @@ export function getRawAvailableMoveList(state: State): MoveOptionList {
 
   // Go through the board to add all the available moves for each piece
   state.board.forEach((row, y) => {
-    row.split("").forEach((e, x) => {
+    row.forEach((e, x) => {
       if (Boolean(e.match(/[A-Z]/)) === (state.turn === "black")) {
         addMoveForEntity(e.toLowerCase() as EntityKind, x, y)
       }
@@ -162,7 +162,7 @@ export function getRawAvailableMoveList(state: State): MoveOptionList {
     ;[-1, 1].forEach((dx) => {
       const x = nx + dx
       if (state.board[y][x] === pawnLetter) {
-        availableMoveList.push(move(x, y, nx, ny, "p", "enPassant", state))
+        availableMoveList.push(makeMove(x, y, nx, ny, "p", "enPassant", state))
       }
     })
   }
@@ -175,7 +175,9 @@ export function getRawAvailableMoveList(state: State): MoveOptionList {
         (col) => state.board[row][col] === "_",
       )
       if (squaresEmpty) {
-        availableMoveList.push(move(4, row, 2, row, "k", "castleLong", state))
+        availableMoveList.push(
+          makeMove(4, row, 2, row, "k", "castleLong", state),
+        )
       }
     }
 
@@ -183,7 +185,9 @@ export function getRawAvailableMoveList(state: State): MoveOptionList {
     if (canCastle.short) {
       const squaresEmpty = [5, 6].every((col) => state.board[row][col] === "_")
       if (squaresEmpty) {
-        availableMoveList.push(move(4, row, 6, row, "k", "castleShort", state))
+        availableMoveList.push(
+          makeMove(4, row, 6, row, "k", "castleShort", state),
+        )
       }
     }
   }

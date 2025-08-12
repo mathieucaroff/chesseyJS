@@ -4,14 +4,10 @@ export function getLetter(x: number): string {
 
 /** Get the name of the given move */
 export function getNotation(
-  x: number,
-  y: number,
-  nx: number,
-  ny: number,
-  kind: EntityKind,
-  special: SpecialMoveName,
+  move: Omit<Move, "notation">,
   state: State,
 ): string {
+  const { x, y, nx, ny, kind, special } = move
   switch (special) {
     case "castleShort":
       return `O-O`

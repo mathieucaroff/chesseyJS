@@ -40,8 +40,10 @@ declare global {
     | "longPawnMove"
 
   interface State {
-    // A list of the pieces each sitting on one of the 64 squares of the board
-    board: string[]
+    // A 2D array of strings, each string representing a single square on the board.
+    // `_` represents an empty square. There are eight rows and each row
+    // has eight single-character strings.
+    board: Board
     // Which player's turn is it (0 = white, 1 = black)
     turn: Turn
     // 0-7 index of the column of the pawn which just advanced two squares, if any.
@@ -51,6 +53,8 @@ declare global {
     whiteCanCastle: Castle
     blackCanCastle: Castle
   }
+
+  type Board = string[][]
 
   type Turn = "white" | "black"
 
