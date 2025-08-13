@@ -1,4 +1,5 @@
-import { inbound } from "../util/boardUtil"
+import { forEachInBoard, inbound } from "../util/boardUtil"
+import { readCaseToTurn } from "../util/turnUtil"
 
 const knightMovementRule: PieceMovementRule = {
   repeat: false,
@@ -57,6 +58,48 @@ const pieceValueRecord = {
   k: Infinity,
 }
 
+export function canPawnMoveTo(
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  state: State,
+): boolean {
+  const piece = state.board[fromY][fromX]
+  const isWhitePawn = piece === piece.toLowerCase()
+  const dy = isWhitePawn ? 1 : -1
+
+  const deltaX = toX - fromX
+  const deltaY = toY - fromY
+
+  // Forward move (one or two squares)
+  if (deltaX === 0) {
+    if (deltaY === dy && state.board[toY][toX] === "_") return true
+    if (
+      deltaY === 2 * dy &&
+      fromY === (isWhitePawn ? 1 : 6) &&
+      state.board[fromY + dy][fromX] === "_" &&
+      state.board[toY][toX] === "_"
+    )
+      return true
+  }
+
+  // Diagonal capture
+  if (Math.abs(deltaX) === 1 && deltaY === dy) {
+    const targetSquare = state.board[toY][toX]
+    if (targetSquare !== "_") {
+      const targetColor =
+        targetSquare === targetSquare.toLowerCase() ? "white" : "black"
+      const pawnColor = isWhitePawn ? "white" : "black"
+      if (targetColor !== pawnColor) return true
+    }
+    // En passant
+    if (state.enPassant === toX && toY === (isWhitePawn ? 5 : 2)) return true
+  }
+
+  return false
+}
+
 export function canPieceAttackSquare(
   x: number,
   y: number,
@@ -96,4 +139,32 @@ export function canPieceAttackSquare(
 
     return false
   })
+}
+
+export function isUnderAttack(
+  targetX: number,
+  targetY: number,
+  byColor: Turn,
+  state: State,
+): boolean {
+  let isAttacked = false
+  forEachInBoard(state.board, (piece, x, y) => {
+    if (piece === "_") return
+    if (readCaseToTurn(piece) === byColor) {
+      if (
+        canPieceAttackSquare(
+          x,
+          y,
+          targetX,
+          targetY,
+          piece.toLowerCase() as EntityKind,
+          state,
+        )
+      ) {
+        isAttacked = true
+        return true // Stop checking once we find a piece that can attack the target
+      }
+    }
+  })
+  return isAttacked
 }

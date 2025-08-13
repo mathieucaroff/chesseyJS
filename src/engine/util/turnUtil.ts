@@ -13,3 +13,7 @@ export function readCaseToTurn(letter: string): Turn {
     return "black"
   }
 }
+
+export function oppositeTurn(turn: Turn): Turn {
+  return turn === "white" ? "black" : "white"
+}

@@ -1,7 +1,7 @@
 import { initialBoard } from "../game/game"
-import { canPieceAttackSquare } from "../rule/ruleset"
+import { canPieceAttackSquare, isUnderAttack } from "../rule/ruleset"
 import { findAllInBoard, forEachInBoard } from "../util/boardUtil"
-import { readCaseToTurn } from "../util/turnUtil"
+import { oppositeTurn, readCaseToTurn } from "../util/turnUtil"
 
 export function initialState(): State {
   return {
@@ -103,26 +103,6 @@ export function kingIsInCheck(state: State): boolean {
 
   const { x: kx, y: ky } = kingPositionArray[0]
 
-  // Check if any opponent piece can move to the king's position
-  let isInCheck = false
-  forEachInBoard(state.board, (piece, x, y) => {
-    if (piece === "_") return
-    if (readCaseToTurn(piece) !== state.turn) {
-      if (
-        canPieceAttackSquare(
-          x,
-          y,
-          kx,
-          ky,
-          piece.toLowerCase() as EntityKind,
-          state,
-        )
-      ) {
-        isInCheck = true
-        return true // Stop checking once we find a piece that can attack the king
-      }
-    }
-  })
-
-  return isInCheck
+  // Check if any opponent piece can reach the king's position
+  return isUnderAttack(kx, ky, oppositeTurn(state.turn), state)
 }

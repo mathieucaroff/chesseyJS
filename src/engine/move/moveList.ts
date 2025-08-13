@@ -1,8 +1,8 @@
 import { getNotation } from "../notation/notation"
-import { movementRuleRecord } from "../rule/ruleset"
+import { isUnderAttack, movementRuleRecord } from "../rule/ruleset"
 import { applyMoveToState, kingIsInCheck } from "../state/state"
 import { forEachInBoard, inbound } from "../util/boardUtil"
-import { readCaseToTurn } from "../util/turnUtil"
+import { oppositeTurn, readCaseToTurn } from "../util/turnUtil"
 
 function makeMove(
   x: number,
@@ -117,10 +117,12 @@ export function getAvailableMoveList(state: State): MoveOptionList {
   const addCastlingMoves = (row: number, canCastle: Castle) => {
     // Long castling (queenside)
     if (canCastle.long) {
-      const squaresEmpty = [1, 2, 3].every(
-        (col) => state.board[row][col] === "_",
+      const allSquaresAvailable = [1, 2, 3].every(
+        (col) =>
+          state.board[row][col] === "_" &&
+          !isUnderAttack(row, col, oppositeTurn(state.turn), state),
       )
-      if (squaresEmpty) {
+      if (allSquaresAvailable) {
         availableMoveList.push(
           makeMove(4, row, 2, row, "k", "castleLong", state),
         )
@@ -129,8 +131,12 @@ export function getAvailableMoveList(state: State): MoveOptionList {
 
     // Short castling (kingside)
     if (canCastle.short) {
-      const squaresEmpty = [5, 6].every((col) => state.board[row][col] === "_")
-      if (squaresEmpty) {
+      const allSquaresAvailable = [5, 6].every(
+        (col) =>
+          state.board[row][col] === "_" &&
+          !isUnderAttack(row, col, oppositeTurn(state.turn), state),
+      )
+      if (allSquaresAvailable) {
         availableMoveList.push(
           makeMove(4, row, 6, row, "k", "castleShort", state),
         )
