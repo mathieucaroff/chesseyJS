@@ -1,24 +1,4 @@
-import { getNotation } from "../notation/notation"
-
-function makeMove(
-  x: number,
-  y: number,
-  nx: number,
-  ny: number,
-  kind: EntityKind,
-  special: SpecialMoveName,
-  state: State,
-): Move {
-  return {
-    x,
-    y,
-    nx,
-    ny,
-    kind,
-    special,
-    notation: getNotation({ x, y, nx, ny, kind, special }, state),
-  }
-}
+import { inbound } from "../util/boardUtil"
 
 const knightMovementRule: PieceMovementRule = {
   repeat: false,
@@ -56,7 +36,10 @@ const queenMovementRule: PieceMovementRule = {
   deltaList: kingMovementRule.deltaList,
 }
 
-const movementRuleRecord: Record<EntityKind, PieceMovementRule | "pawn"> = {
+export const movementRuleRecord: Record<
+  EntityKind,
+  PieceMovementRule | "pawn"
+> = {
   p: "pawn",
   n: knightMovementRule,
   b: bishopMovementRule,
@@ -74,126 +57,43 @@ const pieceValueRecord = {
   k: Infinity,
 }
 
-function inbound(x: number, y: number) {
-  return x >= 0 && x < 8 && y >= 0 && y < 8
-}
+export function canPieceAttackSquare(
+  x: number,
+  y: number,
+  kx: number,
+  ky: number,
+  piece: EntityKind,
+  state: State,
+): boolean {
+  let movementRule = movementRuleRecord[piece]
 
-export function getRawAvailableMoveList(state: State): MoveOptionList {
-  const isEnnemy = (square: string) => {
-    return Boolean(square.match(/[A-Z]/)) !== (state.turn === "black")
+  if (movementRule === "pawn") {
+    const dy = state.turn === "white" ? 1 : -1
+    const captureSquares = [
+      [x - 1, y + dy],
+      [x + 1, y + dy],
+    ]
+    return captureSquares.some(([nx, ny]) => nx === kx && ny === ky)
   }
 
-  let availableMoveList: Move[] = []
-  const addMoveForEntity = (kind: EntityKind, x: number, y: number) => {
-    let movementRule = movementRuleRecord[kind]
-    if (movementRule === "pawn") {
-      const dy = state.turn === "white" ? 1 : -1
-      let ny = y + dy
-      ;[-1, 0, 1].forEach((dx: number) => {
-        const nx = x + dx
-        const square = state.board[ny][nx]
-        if (dx === 0) {
-          if (square === "_") {
-            availableMoveList.push(makeMove(x, y, nx, ny, "p", "", state))
-            ny += dy
-            if (y === (state.turn === "white" ? 1 : 6)) {
-              if (state.board[ny][nx] === "_") {
-                availableMoveList.push(
-                  makeMove(x, y, nx, ny, "p", "longPawnMove", state),
-                )
-              }
-            }
-          }
-        } else {
-          if (isEnnemy(square)) {
-            availableMoveList.push(makeMove(x, y, nx, ny, "p", "", state))
-          }
-        }
-      })
-      return
+  const { deltaList, repeat } = movementRule
+  const allDeltas = [...deltaList, ...deltaList.map(([dx, dy]) => [-dx, -dy])]
+
+  return allDeltas.some(([dx, dy]) => {
+    let nx = x
+    let ny = y
+
+    for (let k = 0; k < (repeat ? 8 : 1); k++) {
+      nx += dx
+      ny += dy
+
+      if (!inbound(nx, ny)) break
+
+      if (nx === kx && ny === ky) return true
+
+      if (state.board[ny][nx] !== "_") break
     }
-    // pawn move handling region end
 
-    // Handling all the pieces here (but not the pawns)
-    const { deltaList, repeat } = movementRule
-    ;[...deltaList, ...deltaList.map(([dx, dy]) => [-dx, -dy])].forEach(
-      ([dx, dy]) => {
-        // Handle piece walk, for rooks, bishops and queen(s)
-        // The piece can move in the given direction until it hits the edge of the board
-        // or an ally piece.
-        let nx = x
-        let ny = y
-        for (let k = 0; k < (repeat ? 8 : 1); k++) {
-          nx += dx
-          ny += dy
-          if (!inbound(nx, ny)) {
-            return
-          }
-          let square = state.board[ny][nx]
-          if (square === "_") {
-            availableMoveList.push(makeMove(x, y, nx, ny, kind, "", state))
-          } else if (isEnnemy(square)) {
-            availableMoveList.push(makeMove(x, y, nx, ny, kind, "", state))
-            return
-          } else {
-            // the piece is an ally, we cannot take it
-            return
-          }
-        }
-      },
-    )
-  }
-
-  // Go through the board to add all the available moves for each piece
-  state.board.forEach((row, y) => {
-    row.forEach((e, x) => {
-      if (Boolean(e.match(/[A-Z]/)) === (state.turn === "black")) {
-        addMoveForEntity(e.toLowerCase() as EntityKind, x, y)
-      }
-    })
+    return false
   })
-
-  // Add the en passant moves
-  if (state.enPassant >= 0) {
-    const nx = state.enPassant
-    const ny = state.turn === "white" ? 5 : 2
-    const y = state.turn === "white" ? 4 : 3
-    const pawnLetter = state.turn === "white" ? "p" : "P"
-    ;[-1, 1].forEach((dx) => {
-      const x = nx + dx
-      if (state.board[y][x] === pawnLetter) {
-        availableMoveList.push(makeMove(x, y, nx, ny, "p", "enPassant", state))
-      }
-    })
-  }
-
-  // Add the castling moves
-  const addCastlingMoves = (row: number, canCastle: Castle) => {
-    // Long castling (queenside)
-    if (canCastle.long) {
-      const squaresEmpty = [1, 2, 3].every(
-        (col) => state.board[row][col] === "_",
-      )
-      if (squaresEmpty) {
-        availableMoveList.push(
-          makeMove(4, row, 2, row, "k", "castleLong", state),
-        )
-      }
-    }
-
-    // Short castling (kingside)
-    if (canCastle.short) {
-      const squaresEmpty = [5, 6].every((col) => state.board[row][col] === "_")
-      if (squaresEmpty) {
-        availableMoveList.push(
-          makeMove(4, row, 6, row, "k", "castleShort", state),
-        )
-      }
-    }
-  }
-
-  if (state.turn === "white") addCastlingMoves(0, state.whiteCanCastle)
-  if (state.turn === "black") addCastlingMoves(7, state.blackCanCastle)
-
-  return availableMoveList
 }

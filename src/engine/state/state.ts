@@ -1,4 +1,7 @@
 import { initialBoard } from "../game/game"
+import { canPieceAttackSquare } from "../rule/ruleset"
+import { findAllInBoard, forEachInBoard } from "../util/boardUtil"
+import { readCaseToTurn } from "../util/turnUtil"
 
 export function initialState(): State {
   return {
@@ -10,20 +13,116 @@ export function initialState(): State {
   }
 }
 
+export function applyMoveToState(move: Move, state: State): State {
+  // Create a deep copy of the board
+  const newBoard: Board = state.board.map((row) => [...row])
+
+  // Apply the basic move
+  const piece = newBoard[move.y][move.x]
+  newBoard[move.ny][move.nx] = piece
+  newBoard[move.y][move.x] = "_"
+
+  // Handle special moves
+  let newEnPassant = -1
+  let newWhiteCanCastle = { ...state.whiteCanCastle }
+  let newBlackCanCastle = { ...state.blackCanCastle }
+
+  switch (move.special) {
+    case "enPassant":
+      // Remove the captured pawn
+      const capturedPawnY = state.turn === "white" ? 4 : 3
+      newBoard[capturedPawnY][move.nx] = "_"
+      break
+
+    case "castleShort":
+    case "castleLong":
+      // Move the rook
+      const rookX = move.special === "castleShort" ? 7 : 0
+      const newRookX = move.special === "castleShort" ? 5 : 3
+      const rookY = move.y
+      newBoard[rookY][newRookX] = newBoard[rookY][rookX]
+      newBoard[rookY][rookX] = "_"
+
+      // Update castling rights
+      if (state.turn === "white") {
+        newWhiteCanCastle = { long: false, short: false }
+      } else {
+        newBlackCanCastle = { long: false, short: false }
+      }
+      break
+
+    case "longPawnMove":
+      // Set en passant square
+      newEnPassant = move.nx
+      break
+
+    case "promotion":
+      // The piece is already set to the promotion piece in move.kind
+      newBoard[move.ny][move.nx] =
+        state.turn === "white"
+          ? move.kind.toLowerCase() // White pieces are lowercase
+          : move.kind.toUpperCase() // Black pieces are uppercase
+      break
+  }
+
+  // Update castling rights if king or rook moved
+  if (move.kind === "k") {
+    if (state.turn === "white") {
+      newWhiteCanCastle = { long: false, short: false }
+    } else {
+      newBlackCanCastle = { long: false, short: false }
+    }
+  } else if (move.kind === "r") {
+    if (state.turn === "white") {
+      if (move.x === 0 && move.y === 0) newWhiteCanCastle.long = false
+      if (move.x === 7 && move.y === 0) newWhiteCanCastle.short = false
+    } else {
+      if (move.x === 0 && move.y === 7) newBlackCanCastle.long = false
+      if (move.x === 7 && move.y === 7) newBlackCanCastle.short = false
+    }
+  }
+
+  return {
+    board: newBoard,
+    turn: state.turn === "white" ? "black" : "white",
+    enPassant: newEnPassant,
+    whiteCanCastle: newWhiteCanCastle,
+    blackCanCastle: newBlackCanCastle,
+  }
+}
+
 export function kingIsInCheck(state: State): boolean {
-  // Find the king's position
-  const kingLetter = state.turn === "white" ? "K" : "k"
-  // Search through the 2D board array
-  let kingPosition = { x: -1, y: -1 }
-  for (let y = 0; y < state.board.length; y++) {
-    for (let x = 0; x < state.board[y].length; x++) {
-      if (state.board[y][x] === kingLetter) {
-        kingPosition = { x, y }
-        break
+  // Find the king's position - look for the king of the current player
+  const kingLetter = state.turn === "white" ? "k" : "K"
+  let kingPositionArray = findAllInBoard(state.board, kingLetter)
+  if (kingPositionArray.length !== 1) {
+    throw new Error(
+      `Found ${kingPositionArray.length} king(s) ${kingLetter} on board`,
+    )
+  }
+
+  const { x: kx, y: ky } = kingPositionArray[0]
+
+  // Check if any opponent piece can move to the king's position
+  let isInCheck = false
+  forEachInBoard(state.board, (piece, x, y) => {
+    if (piece === "_") return
+    if (readCaseToTurn(piece) !== state.turn) {
+      if (
+        canPieceAttackSquare(
+          x,
+          y,
+          kx,
+          ky,
+          piece.toLowerCase() as EntityKind,
+          state,
+        )
+      ) {
+        isInCheck = true
+        return true // Stop checking once we find a piece that can attack the king
       }
     }
-    if (kingPosition.x !== -1) break
-  }
-  // TODO
-  return false
+  })
+
+  return isInCheck
 }

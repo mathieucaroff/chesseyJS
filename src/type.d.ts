@@ -13,6 +13,11 @@ declare global {
 
   type MovePairList = [Move, Move][]
 
+  interface Position {
+    x: number
+    y: number
+  }
+
   interface Move {
     /** Origin X position of the piece being move */
     x: number
