@@ -1,6 +1,6 @@
 /// <reference path="../../type.d.ts" />
 import { describe, test, expect } from "vitest"
-import { applyTurnToCase, readCaseToTurn } from "./turnUtil"
+import { applyTurnToCase, readCaseToTurn, oppositeTurn } from "./turnUtil"
 
 describe("Turn Utilities", () => {
   describe("applyTurnToCase", () => {
@@ -72,6 +72,18 @@ describe("Turn Utilities", () => {
         expect(readCaseToTurn(whiteCase)).toBe("white")
         expect(readCaseToTurn(blackCase)).toBe("black")
       })
+    })
+  })
+
+  describe("oppositeTurn", () => {
+    test("should return opposite turn", () => {
+      expect(oppositeTurn("white")).toBe("black")
+      expect(oppositeTurn("black")).toBe("white")
+    })
+
+    test("should be its own inverse", () => {
+      expect(oppositeTurn(oppositeTurn("white"))).toBe("white")
+      expect(oppositeTurn(oppositeTurn("black"))).toBe("black")
     })
   })
 

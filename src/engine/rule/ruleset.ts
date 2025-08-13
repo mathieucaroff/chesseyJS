@@ -111,7 +111,10 @@ export function canPieceAttackSquare(
   let movementRule = movementRuleRecord[piece]
 
   if (movementRule === "pawn") {
-    const dy = state.turn === "white" ? 1 : -1
+    // Determine pawn direction based on the actual piece on the board, not state.turn
+    const actualPiece = state.board[y][x]
+    const isWhitePawn = actualPiece === actualPiece.toLowerCase()
+    const dy = isWhitePawn ? 1 : -1
     const captureSquares = [
       [x - 1, y + dy],
       [x + 1, y + dy],
@@ -130,11 +133,9 @@ export function canPieceAttackSquare(
       nx += dx
       ny += dy
 
-      if (!inbound(nx, ny)) break
-
       if (nx === kx && ny === ky) return true
 
-      if (state.board[ny][nx] !== "_") break
+      if (!inbound(nx, ny) || state.board[ny][nx] !== "_") break
     }
 
     return false

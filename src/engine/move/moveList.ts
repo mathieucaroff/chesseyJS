@@ -120,7 +120,7 @@ export function getAvailableMoveList(state: State): MoveOptionList {
       const allSquaresAvailable = [1, 2, 3].every(
         (col) =>
           state.board[row][col] === "_" &&
-          !isUnderAttack(row, col, oppositeTurn(state.turn), state),
+          !isUnderAttack(col, row, oppositeTurn(state.turn), state),
       )
       if (allSquaresAvailable) {
         availableMoveList.push(
@@ -134,7 +134,7 @@ export function getAvailableMoveList(state: State): MoveOptionList {
       const allSquaresAvailable = [5, 6].every(
         (col) =>
           state.board[row][col] === "_" &&
-          !isUnderAttack(row, col, oppositeTurn(state.turn), state),
+          !isUnderAttack(col, row, oppositeTurn(state.turn), state),
       )
       if (allSquaresAvailable) {
         availableMoveList.push(
@@ -150,6 +150,7 @@ export function getAvailableMoveList(state: State): MoveOptionList {
   availableMoveList = availableMoveList.filter((move) => {
     // Check if the move puts/leaves the king in check
     const testState = applyMoveToState(move, state)
+    testState.turn = state.turn
     return !kingIsInCheck(testState)
   })
 

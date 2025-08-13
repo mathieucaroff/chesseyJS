@@ -71,10 +71,23 @@ describe("Notation Module", () => {
       }
 
       const notation = getNotation(move, testState)
-      expect(notation).toBe("dxe5 e.p.")
+      expect(notation).toBe("dxe6 e.p.")
     })
 
     test("should return correct notation for pawn promotion", () => {
+      // Create empty board for non-capture promotion test
+      const emptyBoard = Array(8)
+        .fill(null)
+        .map(() => Array(8).fill("_"))
+
+      const state: State = {
+        board: emptyBoard,
+        turn: "white",
+        enPassant: -1,
+        whiteCanCastle: { long: false, short: false },
+        blackCanCastle: { long: false, short: false },
+      }
+
       const move: Omit<Move, "notation"> = {
         x: 4,
         y: 6,
@@ -84,8 +97,8 @@ describe("Notation Module", () => {
         special: "promotion",
       }
 
-      const notation = getNotation(move, testState)
-      expect(notation).toBe("e7=Q")
+      const notation = getNotation(move, state)
+      expect(notation).toBe("e8=Q")
     })
 
     test("should return correct notation for long pawn move", () => {
@@ -99,10 +112,155 @@ describe("Notation Module", () => {
       }
 
       const notation = getNotation(move, testState)
-      expect(notation).toBe("e3")
+      expect(notation).toBe("e4")
     })
 
-    test("should return empty string for regular moves (TODO)", () => {
+    test("should handle move disambiguation when multiple pieces can reach the same square", () => {
+      const emptyBoard = Array(8)
+        .fill(null)
+        .map(() => Array(8).fill("_"))
+      emptyBoard[0][1] = "n" // White knight at b1
+      emptyBoard[0][3] = "n" // White knight at d1
+      emptyBoard[4][4] = "k" // White king at e5
+
+      const state: State = {
+        board: emptyBoard,
+        turn: "white",
+        enPassant: -1,
+        whiteCanCastle: { long: false, short: false },
+        blackCanCastle: { long: false, short: false },
+      }
+
+      // Both knights can reach c3: b1->c3 (delta 1,2) and d1->c3 (delta -1,2)
+      const knightMove: Omit<Move, "notation"> = {
+        x: 1,
+        y: 0,
+        nx: 2,
+        ny: 2,
+        kind: "n",
+        special: "",
+      }
+
+      const notation = getNotation(knightMove, state)
+      expect(notation).toBe("Nbc3") // Should disambiguate by file
+    })
+
+    test("should handle captures with correct notation", () => {
+      const emptyBoard = Array(8)
+        .fill(null)
+        .map(() => Array(8).fill("_"))
+      emptyBoard[2][2] = "n" // White knight at c3
+      emptyBoard[3][4] = "P" // Black piece at e4 to capture
+      emptyBoard[4][4] = "k" // White king at e5
+
+      const state: State = {
+        board: emptyBoard,
+        turn: "white",
+        enPassant: -1,
+        whiteCanCastle: { long: false, short: false },
+        blackCanCastle: { long: false, short: false },
+      }
+
+      const captureMove: Omit<Move, "notation"> = {
+        x: 2,
+        y: 2,
+        nx: 4,
+        ny: 3,
+        kind: "n",
+        special: "",
+      }
+
+      const notation = getNotation(captureMove, state)
+      expect(notation).toBe("Nxe4")
+    })
+
+    test("should handle pawn captures", () => {
+      const emptyBoard = Array(8)
+        .fill(null)
+        .map(() => Array(8).fill("_"))
+      emptyBoard[3][4] = "p" // White pawn at e4
+      emptyBoard[4][3] = "P" // Black piece at d5 to capture
+      emptyBoard[0][0] = "k" // White king at a1
+
+      const state: State = {
+        board: emptyBoard,
+        turn: "white",
+        enPassant: -1,
+        whiteCanCastle: { long: false, short: false },
+        blackCanCastle: { long: false, short: false },
+      }
+
+      const pawnCapture: Omit<Move, "notation"> = {
+        x: 4,
+        y: 3,
+        nx: 3,
+        ny: 4,
+        kind: "p",
+        special: "",
+      }
+
+      const notation = getNotation(pawnCapture, state)
+      expect(notation).toBe("exd5")
+    })
+
+    test("should handle regular pawn moves", () => {
+      const emptyBoard = Array(8)
+        .fill(null)
+        .map(() => Array(8).fill("_"))
+      emptyBoard[3][4] = "p" // White pawn at e4
+      emptyBoard[0][0] = "k" // White king at a1
+
+      const state: State = {
+        board: emptyBoard,
+        turn: "white",
+        enPassant: -1,
+        whiteCanCastle: { long: false, short: false },
+        blackCanCastle: { long: false, short: false },
+      }
+
+      const pawnMove: Omit<Move, "notation"> = {
+        x: 4,
+        y: 3,
+        nx: 4,
+        ny: 4,
+        kind: "p",
+        special: "",
+      }
+
+      const notation = getNotation(pawnMove, state)
+      expect(notation).toBe("e5")
+    })
+
+    test("should add check notation when move gives check", () => {
+      const emptyBoard = Array(8)
+        .fill(null)
+        .map(() => Array(8).fill("_"))
+      emptyBoard[0][0] = "k" // White king at a1
+      emptyBoard[7][4] = "K" // Black king at e8
+      emptyBoard[6][0] = "r" // White rook at a7
+
+      const state: State = {
+        board: emptyBoard,
+        turn: "white",
+        enPassant: -1,
+        whiteCanCastle: { long: false, short: false },
+        blackCanCastle: { long: false, short: false },
+      }
+
+      const checkMove: Omit<Move, "notation"> = {
+        x: 0,
+        y: 6,
+        nx: 4,
+        ny: 6,
+        kind: "r",
+        special: "",
+      }
+
+      const notation = getNotation(checkMove, state)
+      expect(notation).toBe("Re7+") // Should add + for check
+    })
+
+    test("should return correct notation for regular knight move", () => {
       const move: Omit<Move, "notation"> = {
         x: 1,
         y: 0,
@@ -113,10 +271,23 @@ describe("Notation Module", () => {
       }
 
       const notation = getNotation(move, testState)
-      expect(notation).toBe("") // TODO: implement regular move notation
+      expect(notation).toBe("Nc3")
     })
 
     test("should handle promotion to different pieces", () => {
+      // Create empty board for non-capture promotion test
+      const emptyBoard = Array(8)
+        .fill(null)
+        .map(() => Array(8).fill("_"))
+
+      const state: State = {
+        board: emptyBoard,
+        turn: "white",
+        enPassant: -1,
+        whiteCanCastle: { long: false, short: false },
+        blackCanCastle: { long: false, short: false },
+      }
+
       const pieces: EntityKind[] = ["q", "r", "b", "n"]
 
       pieces.forEach((piece) => {
@@ -129,8 +300,8 @@ describe("Notation Module", () => {
           special: "promotion",
         }
 
-        const notation = getNotation(move, testState)
-        expect(notation).toBe(`a7=${piece.toUpperCase()}`)
+        const notation = getNotation(move, state)
+        expect(notation).toBe(`a8=${piece.toUpperCase()}`)
       })
     })
 
@@ -150,7 +321,7 @@ describe("Notation Module", () => {
         const notation = getNotation(move, testState)
         const expectedFrom = getLetter(file)
         const expectedTo = getLetter((file + 1) % 8)
-        expect(notation).toBe(`${expectedFrom}x${expectedTo}5 e.p.`)
+        expect(notation).toBe(`${expectedFrom}x${expectedTo}6 e.p.`)
       })
     })
   })

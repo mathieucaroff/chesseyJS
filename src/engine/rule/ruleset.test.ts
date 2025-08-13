@@ -1,6 +1,11 @@
 /// <reference path="../../type.d.ts" />
 import { describe, test, expect } from "vitest"
-import { movementRuleRecord, canPieceAttackSquare } from "./ruleset"
+import {
+  movementRuleRecord,
+  canPieceAttackSquare,
+  isUnderAttack,
+  canPawnMoveTo,
+} from "./ruleset"
 import { initialBoard } from "../game/game"
 
 describe("Ruleset Module", () => {
@@ -242,5 +247,337 @@ describe("Ruleset Module", () => {
         expect(canPieceAttackSquare(0, 0, 0, 7, "r", state)).toBe(true)
       })
     })
+  })
+})
+
+describe("isUnderAttack", () => {
+  const emptyBoard = Array(8)
+    .fill(null)
+    .map(() => Array(8).fill("_"))
+
+  test("should detect attacks by various pieces", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[4][4] = "Q" // Black queen at e5
+    board[2][2] = "r" // White rook at c3
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Queen should attack diagonally and orthogonally
+    expect(isUnderAttack(0, 0, "black", state)).toBe(true) // a1
+    expect(isUnderAttack(7, 7, "black", state)).toBe(true) // h8
+    expect(isUnderAttack(4, 0, "black", state)).toBe(true) // e1
+    expect(isUnderAttack(0, 4, "black", state)).toBe(true) // a5
+
+    // Rook should attack orthogonally
+    expect(isUnderAttack(2, 0, "white", state)).toBe(true) // c1
+    expect(isUnderAttack(2, 7, "white", state)).toBe(true) // c8
+    expect(isUnderAttack(0, 2, "white", state)).toBe(true) // a3
+    expect(isUnderAttack(7, 2, "white", state)).toBe(true) // h3
+
+    // Squares not under attack
+    expect(isUnderAttack(1, 1, "black", state)).toBe(false) // b2
+    expect(isUnderAttack(3, 3, "white", state)).toBe(false) // d4
+  })
+
+  test("should detect pawn attacks", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[3][4] = "p" // White pawn at e4 (x=4, y=3)
+    board[4][3] = "P" // Black pawn at d5 (x=3, y=4)
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // White pawn at e4 attacks d5 and f5
+    expect(isUnderAttack(3, 4, "white", state)).toBe(true) // d5 under attack by white pawn
+    expect(isUnderAttack(5, 4, "white", state)).toBe(true) // f5 under attack by white pawn
+    expect(isUnderAttack(4, 4, "white", state)).toBe(false) // e5 not under attack by white pawn
+
+    // Black pawn at d5 attacks c4 and e4
+    expect(isUnderAttack(2, 3, "black", state)).toBe(true) // c4 under attack by black pawn
+    expect(isUnderAttack(4, 3, "black", state)).toBe(true) // e4 under attack by black pawn
+    expect(isUnderAttack(3, 3, "black", state)).toBe(false) // d4 not under attack by black pawn
+  })
+
+  test("should detect knight attacks", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[4][4] = "n" // White knight at e5
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Knight attacks
+    const knightTargets = [
+      [6, 5],
+      [6, 3],
+      [5, 6],
+      [5, 2],
+      [2, 5],
+      [2, 3],
+      [3, 6],
+      [3, 2],
+    ]
+
+    knightTargets.forEach(([x, y]) => {
+      expect(isUnderAttack(x, y, "white", state)).toBe(true)
+    })
+
+    // Adjacent squares should not be attacked
+    expect(isUnderAttack(3, 4, "white", state)).toBe(false)
+    expect(isUnderAttack(5, 4, "white", state)).toBe(false)
+    expect(isUnderAttack(4, 3, "white", state)).toBe(false)
+    expect(isUnderAttack(4, 5, "white", state)).toBe(false)
+  })
+
+  test("should handle blocked attacks", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[0][0] = "r" // White rook at a1
+    board[0][3] = "p" // White pawn blocking at d1
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Squares before blocking piece should be attacked
+    expect(isUnderAttack(1, 0, "white", state)).toBe(true) // b1
+    expect(isUnderAttack(2, 0, "white", state)).toBe(true) // c1
+
+    // Squares after blocking piece should not be attacked
+    expect(isUnderAttack(4, 0, "white", state)).toBe(false) // e1
+    expect(isUnderAttack(7, 0, "white", state)).toBe(false) // h1
+  })
+
+  test("should return false when no pieces of attacking color", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[4][4] = "k" // Only white king
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    expect(isUnderAttack(0, 0, "black", state)).toBe(false)
+    expect(isUnderAttack(7, 7, "black", state)).toBe(false)
+  })
+
+  test("should handle attacks on board edges", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[0][0] = "n" // White knight at corner
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Valid knight moves from corner
+    expect(isUnderAttack(1, 2, "white", state)).toBe(true)
+    expect(isUnderAttack(2, 1, "white", state)).toBe(true)
+
+    // Invalid moves off the board
+    expect(isUnderAttack(-1, -1, "white", state)).toBe(false)
+  })
+})
+
+describe("canPawnMoveTo", () => {
+  const emptyBoard = Array(8)
+    .fill(null)
+    .map(() => Array(8).fill("_"))
+
+  test("should allow white pawn forward moves", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[1][4] = "p" // White pawn at e2
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // One square forward
+    expect(canPawnMoveTo(4, 1, 4, 2, state)).toBe(true)
+    // Two squares forward from starting position
+    expect(canPawnMoveTo(4, 1, 4, 3, state)).toBe(true)
+    // Cannot move backward
+    expect(canPawnMoveTo(4, 1, 4, 0, state)).toBe(false)
+    // Cannot move sideways
+    expect(canPawnMoveTo(4, 1, 5, 1, state)).toBe(false)
+  })
+
+  test("should allow black pawn forward moves", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[6][4] = "P" // Black pawn at e7
+
+    const state: State = {
+      board,
+      turn: "black",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // One square forward (down for black)
+    expect(canPawnMoveTo(4, 6, 4, 5, state)).toBe(true)
+    // Two squares forward from starting position
+    expect(canPawnMoveTo(4, 6, 4, 4, state)).toBe(true)
+    // Cannot move backward
+    expect(canPawnMoveTo(4, 6, 4, 7, state)).toBe(false)
+    // Cannot move sideways
+    expect(canPawnMoveTo(4, 6, 5, 6, state)).toBe(false)
+  })
+
+  test("should allow diagonal captures", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[3][4] = "p" // White pawn at e4
+    board[4][3] = "P" // Black piece to capture at d5
+    board[4][5] = "P" // Black piece to capture at f5
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Can capture diagonally
+    expect(canPawnMoveTo(4, 3, 3, 4, state)).toBe(true) // Capture left
+    expect(canPawnMoveTo(4, 3, 5, 4, state)).toBe(true) // Capture right
+    // Cannot capture forward
+    expect(canPawnMoveTo(4, 3, 4, 4, state)).toBe(false)
+  })
+
+  test("should not allow diagonal moves without capture", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[3][4] = "p" // White pawn at e4
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Cannot move diagonally to empty squares
+    expect(canPawnMoveTo(4, 3, 3, 4, state)).toBe(false)
+    expect(canPawnMoveTo(4, 3, 5, 4, state)).toBe(false)
+  })
+
+  test("should not allow capturing own pieces", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[3][4] = "p" // White pawn at e4
+    board[4][3] = "r" // White piece at d5
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Cannot capture own piece
+    expect(canPawnMoveTo(4, 3, 3, 4, state)).toBe(false)
+  })
+
+  test("should handle en passant captures", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[4][4] = "p" // White pawn at e5
+    board[4][3] = "P" // Black pawn at d5 (that just moved two squares)
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: 3, // d-file
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Can capture en passant
+    expect(canPawnMoveTo(4, 4, 3, 5, state)).toBe(true)
+    // Normal forward move still works
+    expect(canPawnMoveTo(4, 4, 4, 5, state)).toBe(true)
+    // Cannot capture on other diagonal without piece
+    expect(canPawnMoveTo(4, 4, 5, 5, state)).toBe(false)
+  })
+
+  test("should handle black en passant captures", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[3][3] = "P" // Black pawn at d4
+    board[3][4] = "p" // White pawn at e4 (that just moved two squares)
+
+    const state: State = {
+      board,
+      turn: "black",
+      enPassant: 4, // e-file
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Can capture en passant (black moves down)
+    expect(canPawnMoveTo(3, 3, 4, 2, state)).toBe(true)
+  })
+
+  test("should be blocked by pieces", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[1][4] = "p" // White pawn at e2
+    board[2][4] = "P" // Black piece blocking at e3
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // Cannot move forward when blocked
+    expect(canPawnMoveTo(4, 1, 4, 2, state)).toBe(false)
+    expect(canPawnMoveTo(4, 1, 4, 3, state)).toBe(false)
+  })
+
+  test("should only allow two-square move from starting position", () => {
+    const board = [...emptyBoard.map((row) => [...row])]
+    board[3][4] = "p" // White pawn at e4 (not starting position)
+
+    const state: State = {
+      board,
+      turn: "white",
+      enPassant: -1,
+      whiteCanCastle: { long: true, short: true },
+      blackCanCastle: { long: true, short: true },
+    }
+
+    // One square is fine
+    expect(canPawnMoveTo(4, 3, 4, 4, state)).toBe(true)
+    // Two squares not allowed from non-starting position
+    expect(canPawnMoveTo(4, 3, 4, 5, state)).toBe(false)
   })
 })

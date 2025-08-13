@@ -192,7 +192,7 @@ describe("State Module", () => {
       const newState = applyMoveToState(move, state)
 
       expect(newState.board[6][4]).toBe("_") // Original position empty
-      expect(newState.board[7][4]).toBe("Q") // Promoted to uppercase (white perspective)
+      expect(newState.board[7][4]).toBe("q") // Promoted to queen (white piece is lowercase)
     })
 
     test("should update castling rights when king moves", () => {
@@ -265,8 +265,8 @@ describe("State Module", () => {
       const board = Array(8)
         .fill(null)
         .map(() => Array(8).fill("_"))
-      board[0][4] = "K" // White king
-      board[7][4] = "q" // Black queen attacking king
+      board[0][4] = "k" // White king
+      board[7][4] = "Q" // Black queen attacking king
 
       const state: State = {
         board,
@@ -283,8 +283,8 @@ describe("State Module", () => {
       const board = Array(8)
         .fill(null)
         .map(() => Array(8).fill("_"))
-      board[0][4] = "K" // White king
-      board[0][0] = "r" // Black rook attacking king horizontally
+      board[0][4] = "k" // White king
+      board[0][0] = "R" // Black rook attacking king horizontally
 
       const state: State = {
         board,
@@ -301,8 +301,8 @@ describe("State Module", () => {
       const board = Array(8)
         .fill(null)
         .map(() => Array(8).fill("_"))
-      board[0][4] = "K" // White king
-      board[2][2] = "b" // Black bishop attacking king diagonally
+      board[0][4] = "k" // White king
+      board[2][2] = "B" // Black bishop attacking king diagonally
 
       const state: State = {
         board,
@@ -319,8 +319,8 @@ describe("State Module", () => {
       const board = Array(8)
         .fill(null)
         .map(() => Array(8).fill("_"))
-      board[4][4] = "K" // White king
-      board[2][3] = "n" // Black knight attacking king
+      board[4][4] = "k" // White king
+      board[2][3] = "N" // Black knight attacking king
 
       const state: State = {
         board,
@@ -337,8 +337,8 @@ describe("State Module", () => {
       const board = Array(8)
         .fill(null)
         .map(() => Array(8).fill("_"))
-      board[4][4] = "K" // White king
-      board[3][3] = "p" // Black pawn attacking king
+      board[4][4] = "k" // White king
+      board[3][3] = "P" // Black pawn attacking king
 
       const state: State = {
         board,
@@ -355,9 +355,9 @@ describe("State Module", () => {
       const board = Array(8)
         .fill(null)
         .map(() => Array(8).fill("_"))
-      board[0][4] = "K" // White king
-      board[0][2] = "P" // White piece blocking
-      board[0][0] = "r" // Black rook (blocked)
+      board[0][4] = "k" // White king
+      board[0][2] = "p" // White piece blocking
+      board[0][0] = "R" // Black rook (blocked)
 
       const state: State = {
         board,
@@ -374,8 +374,8 @@ describe("State Module", () => {
       const board = Array(8)
         .fill(null)
         .map(() => Array(8).fill("_"))
-      board[0][4] = "K" // First white king
-      board[1][4] = "K" // Second white king (invalid)
+      board[0][4] = "k" // First white king
+      board[1][4] = "k" // Second white king (invalid)
 
       const state: State = {
         board,
@@ -385,7 +385,7 @@ describe("State Module", () => {
         blackCanCastle: { long: false, short: false },
       }
 
-      expect(() => kingIsInCheck(state)).toThrow("Found 2 king(s) K on board")
+      expect(() => kingIsInCheck(state)).toThrow("Found 2 king(s) k on board")
     })
 
     test("should throw error if no king found", () => {
@@ -402,7 +402,7 @@ describe("State Module", () => {
         blackCanCastle: { long: false, short: false },
       }
 
-      expect(() => kingIsInCheck(state)).toThrow("Found 0 king(s) K on board")
+      expect(() => kingIsInCheck(state)).toThrow("Found 0 king(s) k on board")
     })
   })
 })
