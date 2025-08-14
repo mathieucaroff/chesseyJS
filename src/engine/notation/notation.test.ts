@@ -3,6 +3,9 @@ import { describe, test, expect } from "vitest"
 import { getLetter, getNotation } from "./notation"
 import { initialBoard } from "../game/game"
 
+const makeEmptyBoard = () =>
+  Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => "_"))
+
 describe("Notation Module", () => {
   describe("getLetter", () => {
     test("should return correct letters for column indices", () => {
@@ -71,14 +74,12 @@ describe("Notation Module", () => {
       }
 
       const notation = getNotation(move, testState)
-      expect(notation).toBe("dxe6 e.p.")
+      expect(notation).toBe("dxe6")
     })
 
     test("should return correct notation for pawn promotion", () => {
       // Create empty board for non-capture promotion test
-      const emptyBoard = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const emptyBoard = makeEmptyBoard()
 
       const state: State = {
         board: emptyBoard,
@@ -116,9 +117,7 @@ describe("Notation Module", () => {
     })
 
     test("should handle move disambiguation when multiple pieces can reach the same square", () => {
-      const emptyBoard = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const emptyBoard = makeEmptyBoard()
       emptyBoard[0][1] = "n" // White knight at b1
       emptyBoard[0][3] = "n" // White knight at d1
       emptyBoard[4][4] = "k" // White king at e5
@@ -146,9 +145,7 @@ describe("Notation Module", () => {
     })
 
     test("should handle captures with correct notation", () => {
-      const emptyBoard = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const emptyBoard = makeEmptyBoard()
       emptyBoard[2][2] = "n" // White knight at c3
       emptyBoard[3][4] = "P" // Black piece at e4 to capture
       emptyBoard[4][4] = "k" // White king at e5
@@ -175,9 +172,7 @@ describe("Notation Module", () => {
     })
 
     test("should handle pawn captures", () => {
-      const emptyBoard = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const emptyBoard = makeEmptyBoard()
       emptyBoard[3][4] = "p" // White pawn at e4
       emptyBoard[4][3] = "P" // Black piece at d5 to capture
       emptyBoard[0][0] = "k" // White king at a1
@@ -204,9 +199,7 @@ describe("Notation Module", () => {
     })
 
     test("should handle regular pawn moves", () => {
-      const emptyBoard = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const emptyBoard = makeEmptyBoard()
       emptyBoard[3][4] = "p" // White pawn at e4
       emptyBoard[0][0] = "k" // White king at a1
 
@@ -232,9 +225,7 @@ describe("Notation Module", () => {
     })
 
     test("should add check notation when move gives check", () => {
-      const emptyBoard = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const emptyBoard = makeEmptyBoard()
       emptyBoard[0][0] = "k" // White king at a1
       emptyBoard[7][4] = "K" // Black king at e8
       emptyBoard[6][0] = "r" // White rook at a7
@@ -276,9 +267,7 @@ describe("Notation Module", () => {
 
     test("should handle promotion to different pieces", () => {
       // Create empty board for non-capture promotion test
-      const emptyBoard = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const emptyBoard = makeEmptyBoard()
 
       const state: State = {
         board: emptyBoard,
@@ -321,7 +310,7 @@ describe("Notation Module", () => {
         const notation = getNotation(move, testState)
         const expectedFrom = getLetter(file)
         const expectedTo = getLetter((file + 1) % 8)
-        expect(notation).toBe(`${expectedFrom}x${expectedTo}6 e.p.`)
+        expect(notation).toBe(`${expectedFrom}x${expectedTo}6`)
       })
     })
   })

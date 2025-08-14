@@ -66,7 +66,9 @@ function findSimilarMoves(
             ),
           }
 
-          if (canPieceAttackSquare(x, y, nx, ny, pieceKind, tempState)) {
+          if (
+            canPieceAttackSquare(x, y, nx, ny, pieceKind, pieceColor, tempState)
+          ) {
             similarMoves.push({ x, y })
           }
         }
@@ -118,7 +120,7 @@ export function getNotation(
   notation = {
     castleShort: () => `O-O`,
     castleLong: () => `O-O-O`,
-    enPassant: () => `${getLetter(x)}x${destination} e.p.`,
+    enPassant: () => `${getLetter(x)}x${destination}`,
     promotion: () => {
       let promotionBase = `${destination}`
       if (isCapture(move, state)) {
@@ -130,41 +132,40 @@ export function getNotation(
     "": () => "",
   }[special]()
 
-  // Piece notation (empty for pawns)
-  if (kind !== "p") {
-    notation += kind.toUpperCase()
-    notation += getNonPawnDisambiguation(move, state)
-  }
-
-  // Capture notation
-  if (isCapture(move, state)) {
-    if (kind === "p") {
-      // Pawn captures include the file
-      notation += getLetter(x)
+  if (!special) {
+    // Piece notation (empty for pawns)
+    if (kind !== "p") {
+      notation += kind.toUpperCase()
+      notation += getNonPawnDisambiguation(move, state)
     }
-    notation += "x"
-  }
 
-  // Destination square
-  notation += destination
+    // Capture notation
+    if (isCapture(move, state)) {
+      if (kind === "p") {
+        // Pawn captures include the file
+        notation += getLetter(x)
+      }
+      notation += "x"
+    }
+
+    // Destination square
+    notation += destination
+  }
 
   // Check if this move puts the opponent in check or checkmate
   // We need to create a test state to check this
-  try {
-    const testMove: Move = { ...move, notation: "" }
-    if (wouldBeInCheck(state, testMove)) {
-      // Check if it's checkmate by seeing if opponent has any legal moves
-      const testState = applyMoveToState(testMove, state)
-      const opponentMoves = getAvailableMoveList(testState)
 
-      if (opponentMoves === "checkmate") {
-        notation += "#"
-      } else {
-        notation += "+"
-      }
+  const testMove: Move = { ...move, notation: "" }
+  if (wouldBeInCheck(state, testMove)) {
+    // Check if it's checkmate by seeing if opponent has any legal moves
+    const testState = applyMoveToState(testMove, state)
+    const opponentMoves = getAvailableMoveList(testState, false)
+
+    if (opponentMoves === "checkmate") {
+      notation += "#"
+    } else {
+      notation += "+"
     }
-  } catch (error) {
-    // If we can't determine check status, continue without check notation
   }
 
   return notation

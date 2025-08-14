@@ -58,6 +58,31 @@ const pieceValueRecord = {
   k: Infinity,
 }
 
+// Helper function to check if path is clear for sliding pieces
+function isPathClear(
+  x: number,
+  y: number,
+  nx: number,
+  ny: number,
+  state: State,
+): boolean {
+  const dx = Math.sign(nx - x)
+  const dy = Math.sign(ny - y)
+
+  let currentX = x + dx
+  let currentY = y + dy
+
+  while (currentX !== nx || currentY !== ny) {
+    if (state.board[currentY][currentX] !== "_") {
+      return false
+    }
+    currentX += dx
+    currentY += dy
+  }
+
+  return true
+}
+
 export function canPawnMoveTo(
   fromX: number,
   fromY: number,
@@ -100,21 +125,56 @@ export function canPawnMoveTo(
   return false
 }
 
+// Helper function to check if a piece can move to a destination
+export function canPieceMoveTo(
+  x: number,
+  y: number,
+  nx: number,
+  ny: number,
+  kind: EntityKind,
+  state: State,
+): boolean {
+  // This is a simplified version - you might want to import and use the actual movement validation from ruleset.ts
+  const dx = nx - x
+  const dy = ny - y
+
+  switch (kind) {
+    case "r": // Rook
+      return (dx === 0 || dy === 0) && isPathClear(x, y, nx, ny, state)
+    case "n": // Knight
+      return (
+        (Math.abs(dx) === 2 && Math.abs(dy) === 1) ||
+        (Math.abs(dx) === 1 && Math.abs(dy) === 2)
+      )
+    case "b": // Bishop
+      return Math.abs(dx) === Math.abs(dy) && isPathClear(x, y, nx, ny, state)
+    case "q": // Queen
+      return (
+        (dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy)) &&
+        isPathClear(x, y, nx, ny, state)
+      )
+    case "k": // King
+      return Math.abs(dx) <= 1 && Math.abs(dy) <= 1
+    case "p": // Pawn - use the existing function
+      return canPawnMoveTo(x, y, nx, ny, state)
+    default:
+      return false
+  }
+}
+
 export function canPieceAttackSquare(
   x: number,
   y: number,
   kx: number,
   ky: number,
   piece: EntityKind,
+  pieceColor: Turn,
   state: State,
 ): boolean {
   let movementRule = movementRuleRecord[piece]
 
   if (movementRule === "pawn") {
-    // Determine pawn direction based on the actual piece on the board, not state.turn
-    const actualPiece = state.board[y][x]
-    const isWhitePawn = actualPiece === actualPiece.toLowerCase()
-    const dy = isWhitePawn ? 1 : -1
+    const dy = pieceColor === "white" ? 1 : -1
     const captureSquares = [
       [x - 1, y + dy],
       [x + 1, y + dy],
@@ -159,6 +219,7 @@ export function isUnderAttack(
           targetX,
           targetY,
           piece.toLowerCase() as EntityKind,
+          byColor,
           state,
         )
       ) {

@@ -3,11 +3,14 @@ import { describe, test, expect } from "vitest"
 import { getAvailableMoveList } from "./moveList"
 import { initialState } from "../state/state"
 
+const makeEmptyBoard = () =>
+  Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => "_"))
+
 describe("Move List Module", () => {
   describe("getAvailableMoveList", () => {
     test("should return valid moves for initial position", () => {
       const state = initialState()
-      const moves = getAvailableMoveList(state)
+      const moves = getAvailableMoveList(state, true)
 
       expect(Array.isArray(moves)).toBe(true)
       if (Array.isArray(moves)) {
@@ -25,7 +28,7 @@ describe("Move List Module", () => {
 
     test("should include long pawn moves from starting position", () => {
       const state = initialState()
-      const moves = getAvailableMoveList(state)
+      const moves = getAvailableMoveList(state, true)
 
       expect(Array.isArray(moves)).toBe(true)
       if (Array.isArray(moves)) {
@@ -48,9 +51,7 @@ describe("Move List Module", () => {
 
     test("should handle en passant moves", () => {
       // Setup position with en passant possibility
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0] = ["r", "n", "b", "q", "k", "b", "n", "r"]
       board[7] = ["R", "N", "B", "Q", "K", "B", "N", "R"]
       board[4][3] = "P" // Black pawn that just moved two squares
@@ -64,7 +65,7 @@ describe("Move List Module", () => {
         blackCanCastle: { long: true, short: true },
       }
 
-      const moves = getAvailableMoveList(state)
+      const moves = getAvailableMoveList(state, true)
 
       expect(Array.isArray(moves)).toBe(true)
       if (Array.isArray(moves)) {
@@ -83,11 +84,9 @@ describe("Move List Module", () => {
 
     test("should handle castling moves", () => {
       // Setup castling position
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0] = ["r", "_", "_", "_", "k", "_", "_", "r"] // Clear path for castling
-      board[7] = ["R", "N", "B", "Q", "K", "B", "N", "R"]
+      board[7][4] = "K" // Black king (minimal setup)
 
       const state: State = {
         board,
@@ -97,7 +96,7 @@ describe("Move List Module", () => {
         blackCanCastle: { long: true, short: true },
       }
 
-      const moves = getAvailableMoveList(state)
+      const moves = getAvailableMoveList(state, true)
 
       expect(Array.isArray(moves)).toBe(true)
       if (Array.isArray(moves)) {
@@ -131,12 +130,10 @@ describe("Move List Module", () => {
 
     test("should not allow castling through check", () => {
       // Setup position where castling path is under attack
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0] = ["r", "_", "_", "_", "k", "_", "_", "r"]
-      board[7] = ["R", "N", "B", "Q", "K", "B", "N", "R"]
-      board[2][5] = "R" // Black rook attacking f1 (short castle path)
+      board[7][4] = "K" // Black king (minimal setup)
+      board[1][5] = "R" // Black rook attacking f1 (short castle path) from f2
 
       const state: State = {
         board,
@@ -146,7 +143,7 @@ describe("Move List Module", () => {
         blackCanCastle: { long: true, short: true },
       }
 
-      const moves = getAvailableMoveList(state)
+      const moves = getAvailableMoveList(state, true)
 
       expect(Array.isArray(moves)).toBe(true)
       if (Array.isArray(moves)) {
@@ -164,12 +161,11 @@ describe("Move List Module", () => {
 
     test("should not allow moves that leave king in check", () => {
       // Setup position where moving a piece would expose the king
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0][4] = "k" // White king
       board[0][3] = "b" // White bishop protecting king
       board[0][0] = "R" // Black rook that would attack king if bishop moves
+      board[7][4] = "K" // Black king (required for valid position)
 
       const state: State = {
         board,
@@ -179,7 +175,7 @@ describe("Move List Module", () => {
         blackCanCastle: { long: false, short: false },
       }
 
-      const moves = getAvailableMoveList(state)
+      const moves = getAvailableMoveList(state, true)
 
       expect(Array.isArray(moves)).toBe(true)
       if (Array.isArray(moves)) {
@@ -192,14 +188,14 @@ describe("Move List Module", () => {
     })
 
     test("should return checkmate when no legal moves and king in check", () => {
-      // Setup checkmate position (fool's mate)
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
-      board[0][4] = "k" // White king
-      board[1][5] = "p" // White pawn on f2
-      board[1][6] = "p" // White pawn on g2
-      board[3][7] = "Q" // Black queen delivering checkmate
+      // Setup checkmate position (back rank mate)
+      const board = makeEmptyBoard()
+      board[0][4] = "k" // White king on e1
+      board[1][4] = "p" // White pawn blocking king escape on e2
+      board[1][3] = "p" // White pawn blocking king escape on d2
+      board[1][5] = "p" // White pawn blocking king escape on f2
+      board[0][0] = "R" // Black rook delivering checkmate on a1
+      board[7][4] = "K" // Black king (required for valid position)
 
       const state: State = {
         board,
@@ -209,17 +205,15 @@ describe("Move List Module", () => {
         blackCanCastle: { long: false, short: false },
       }
 
-      const result = getAvailableMoveList(state)
+      const result = getAvailableMoveList(state, true)
       expect(result).toBe("checkmate")
     })
 
     test("should return stalemate when no legal moves and king not in check", () => {
       // Setup stalemate position
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0][0] = "k" // White king in corner
-      board[1][1] = "Q" // Black queen controlling escape squares
+      board[2][1] = "Q" // Black queen controlling escape squares
       board[2][0] = "K" // Black king preventing escape
 
       const state: State = {
@@ -230,15 +224,13 @@ describe("Move List Module", () => {
         blackCanCastle: { long: false, short: false },
       }
 
-      const result = getAvailableMoveList(state)
+      const result = getAvailableMoveList(state, true)
       expect(result).toBe("stalemate")
     })
 
     test("should handle pawn captures", () => {
       // Setup position with pawn capture opportunity
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0] = ["r", "n", "b", "q", "k", "b", "n", "r"]
       board[7] = ["R", "N", "B", "Q", "K", "B", "N", "R"]
       board[3][4] = "p" // White pawn
@@ -253,7 +245,7 @@ describe("Move List Module", () => {
         blackCanCastle: { long: true, short: true },
       }
 
-      const moves = getAvailableMoveList(state)
+      const moves = getAvailableMoveList(state, true)
 
       expect(Array.isArray(moves)).toBe(true)
       if (Array.isArray(moves)) {
@@ -271,13 +263,12 @@ describe("Move List Module", () => {
 
     test("should handle piece blocking and capturing", () => {
       // Setup position with various pieces
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0][0] = "r" // White rook
       board[0][3] = "P" // Black piece blocking
       board[0][7] = "R" // Black piece that can be captured
-      board[4][0] = "K" // Black king (not relevant for this test)
+      board[7][4] = "K" // Black king
+      board[4][0] = "k" // White king (required for valid position)
 
       const state: State = {
         board,
@@ -287,7 +278,7 @@ describe("Move List Module", () => {
         blackCanCastle: { long: false, short: false },
       }
 
-      const moves = getAvailableMoveList(state)
+      const moves = getAvailableMoveList(state, true)
 
       expect(Array.isArray(moves)).toBe(true)
       if (Array.isArray(moves)) {

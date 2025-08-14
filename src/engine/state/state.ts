@@ -1,7 +1,7 @@
 import { initialBoard } from "../game/game"
-import { canPieceAttackSquare, isUnderAttack } from "../rule/ruleset"
-import { findAllInBoard, forEachInBoard } from "../util/boardUtil"
-import { oppositeTurn, readCaseToTurn } from "../util/turnUtil"
+import { isUnderAttack } from "../rule/ruleset"
+import { findAllInBoard } from "../util/boardUtil"
+import { oppositeTurn } from "../util/turnUtil"
 
 export function initialState(): State {
   return {

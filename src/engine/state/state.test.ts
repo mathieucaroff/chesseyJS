@@ -3,6 +3,9 @@ import { describe, test, expect } from "vitest"
 import { initialState, applyMoveToState, kingIsInCheck } from "./state"
 import { initialBoard } from "../game/game"
 
+const makeEmptyBoard = () =>
+  Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => "_"))
+
 describe("State Module", () => {
   describe("initialState", () => {
     test("should return correct initial chess state", () => {
@@ -166,9 +169,7 @@ describe("State Module", () => {
 
     test("should handle pawn promotion", () => {
       // Setup promotion position
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[6][4] = "p" // White pawn ready to promote
 
       const state: State = {
@@ -262,9 +263,7 @@ describe("State Module", () => {
     })
 
     test("should detect check from queen", () => {
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0][4] = "k" // White king
       board[7][4] = "Q" // Black queen attacking king
 
@@ -280,9 +279,7 @@ describe("State Module", () => {
     })
 
     test("should detect check from rook", () => {
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0][4] = "k" // White king
       board[0][0] = "R" // Black rook attacking king horizontally
 
@@ -298,9 +295,7 @@ describe("State Module", () => {
     })
 
     test("should detect check from bishop", () => {
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0][4] = "k" // White king
       board[2][2] = "B" // Black bishop attacking king diagonally
 
@@ -316,9 +311,7 @@ describe("State Module", () => {
     })
 
     test("should detect check from knight", () => {
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[4][4] = "k" // White king
       board[2][3] = "N" // Black knight attacking king
 
@@ -333,12 +326,10 @@ describe("State Module", () => {
       expect(kingIsInCheck(state)).toBe(true)
     })
 
-    test("should detect check from pawn", () => {
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
-      board[4][4] = "k" // White king
-      board[3][3] = "P" // Black pawn attacking king
+    test("should detect check from black pawn", () => {
+      const board = makeEmptyBoard()
+      board[4][4] = "k" // White king at e5
+      board[5][5] = "P" // Black pawn at f6 attacking king diagonally
 
       const state: State = {
         board,
@@ -351,10 +342,24 @@ describe("State Module", () => {
       expect(kingIsInCheck(state)).toBe(true)
     })
 
+    test("should detect check from white pawn", () => {
+      const board = makeEmptyBoard()
+      board[4][4] = "K" // Black king at e5
+      board[3][3] = "p" // White pawn at d4 attacking king diagonally
+
+      const state: State = {
+        board,
+        turn: "black",
+        enPassant: -1,
+        whiteCanCastle: { long: false, short: false },
+        blackCanCastle: { long: false, short: false },
+      }
+
+      expect(kingIsInCheck(state)).toBe(true)
+    })
+
     test("should not detect check when blocked", () => {
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0][4] = "k" // White king
       board[0][2] = "p" // White piece blocking
       board[0][0] = "R" // Black rook (blocked)
@@ -371,9 +376,7 @@ describe("State Module", () => {
     })
 
     test("should throw error if multiple kings found", () => {
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       board[0][4] = "k" // First white king
       board[1][4] = "k" // Second white king (invalid)
 
@@ -389,9 +392,7 @@ describe("State Module", () => {
     })
 
     test("should throw error if no king found", () => {
-      const board = Array(8)
-        .fill(null)
-        .map(() => Array(8).fill("_"))
+      const board = makeEmptyBoard()
       // No king on board
 
       const state: State = {

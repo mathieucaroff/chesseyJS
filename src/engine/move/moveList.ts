@@ -4,40 +4,43 @@ import { applyMoveToState, kingIsInCheck } from "../state/state"
 import { forEachInBoard, inbound } from "../util/boardUtil"
 import { oppositeTurn, readCaseToTurn } from "../util/turnUtil"
 
-function makeMove(
-  x: number,
-  y: number,
-  nx: number,
-  ny: number,
-  kind: EntityKind,
-  special: SpecialMoveName,
+export function getAvailableMoveList(
   state: State,
-): Move {
-  return {
+  withNotation: boolean,
+): MoveOptionList {
+  const isEnnemy = (square: string) => {
+    if (square === "_") return false
+    return readCaseToTurn(square) !== state.turn
+  }
+
+  const makeMove = (
+    x: number,
+    y: number,
+    nx: number,
+    ny: number,
+    kind: EntityKind,
+    special: SpecialMoveName,
+    state: State,
+  ): Move => ({
     x,
     y,
     nx,
     ny,
     kind,
     special,
-    notation: getNotation({ x, y, nx, ny, kind, special }, state),
-  }
-}
-
-export function getAvailableMoveList(state: State): MoveOptionList {
-  const isEnnemy = (square: string) => {
-    if (square === "_") return false
-    return readCaseToTurn(square) !== state.turn
-  }
+    notation: withNotation
+      ? getNotation({ x, y, nx, ny, kind, special }, state)
+      : "",
+  })
 
   let availableMoveList: Move[] = []
   const addMoveForEntity = (kind: EntityKind, x: number, y: number) => {
     let movementRule = movementRuleRecord[kind]
     if (movementRule === "pawn") {
       const dy = state.turn === "white" ? 1 : -1
-      let ny = y + dy
       ;[-1, 0, 1].forEach((dx: number) => {
         const nx = x + dx
+        let ny = y + dy
         if (!inbound(nx, ny)) return
         const square = state.board[ny][nx]
         if (dx === 0) {
@@ -45,7 +48,7 @@ export function getAvailableMoveList(state: State): MoveOptionList {
             availableMoveList.push(makeMove(x, y, nx, ny, "p", "", state))
             ny += dy
             if (y === (state.turn === "white" ? 1 : 6)) {
-              if (state.board[ny][nx] === "_") {
+              if (inbound(nx, ny) && state.board[ny][nx] === "_") {
                 availableMoveList.push(
                   makeMove(x, y, nx, ny, "p", "longPawnMove", state),
                 )
@@ -107,7 +110,7 @@ export function getAvailableMoveList(state: State): MoveOptionList {
     const pawnLetter = state.turn === "white" ? "p" : "P"
     ;[-1, 1].forEach((dx) => {
       const x = nx + dx
-      if (state.board[y][x] === pawnLetter) {
+      if (inbound(x, y) && state.board[y][x] === pawnLetter) {
         availableMoveList.push(makeMove(x, y, nx, ny, "p", "enPassant", state))
       }
     })
@@ -115,6 +118,11 @@ export function getAvailableMoveList(state: State): MoveOptionList {
 
   // Add the castling moves
   const addCastlingMoves = (row: number, canCastle: Castle) => {
+    // Cannot castle if king is in check
+    if (isUnderAttack(4, row, oppositeTurn(state.turn), state)) {
+      return
+    }
+
     // Long castling (queenside)
     if (canCastle.long) {
       const allSquaresAvailable = [1, 2, 3].every(
