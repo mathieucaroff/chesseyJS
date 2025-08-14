@@ -3,19 +3,26 @@ import { canPawnMoveTo, canPieceAttackSquare } from "../rule/ruleset"
 import { applyMoveToState, kingIsInCheck } from "../state/state"
 import { readCaseToTurn } from "../util/turnUtil"
 
+/** Converts a file number (0-7) to its corresponding chess letter (a-h) */
 export function getLetter(x: number): string {
   return String.fromCharCode(97 + x)
 }
 
+/** Converts a rank number (0-7) to its corresponding chess rank (1-8) */
 function getRank(y: number): number {
   return y + 1
 }
 
+/**
+ * Determines if a move is a capture based on the target square or special
+ * move type
+ */
 function isCapture(move: Omit<Move, "notation">, state: State): boolean {
   const targetSquare = state.board[move.ny][move.nx]
   return targetSquare !== "_" || move.special === "enPassant"
 }
 
+/** Checks if making a test move would leave the king in check */
 function wouldBeInCheck(
   state: State,
   testMove: Omit<Move, "notation">,
@@ -25,6 +32,10 @@ function wouldBeInCheck(
   return kingIsInCheck(testState)
 }
 
+/**
+ * Finds all pieces of the same type and color that could potentially move to
+ * the same destination
+ */
 function findSimilarMoves(
   move: Omit<Move, "notation">,
   state: State,
@@ -47,7 +58,8 @@ function findSimilarMoves(
         if (x === move.x && y === move.y) continue
 
         // For non-pawn pieces, we can use canPieceAttackSquare directly
-        // For pawns, we need special logic since canPieceAttackSquare only handles attacks
+        // For pawns, we need special logic since canPieceAttackSquare only
+        // handles attacks
         if (pieceKind === "p") {
           // Check if this pawn can move to the destination
           if (canPawnMoveTo(x, y, nx, ny, state)) {
@@ -55,7 +67,8 @@ function findSimilarMoves(
           }
         } else {
           // For other pieces, check if they can attack/move to the destination
-          // We need to temporarily clear the destination square to check movement
+          // We need to temporarily clear the destination square to check
+          // movement
           const originalPiece = state.board[ny][nx]
           const tempState = {
             ...state,
@@ -79,6 +92,10 @@ function findSimilarMoves(
   return similarMoves
 }
 
+/**
+ * Generates disambiguation notation for non-pawn pieces when multiple pieces
+ * can reach the same square
+ */
 function getNonPawnDisambiguation(
   move: Omit<Move, "notation">,
   state: State,
@@ -104,7 +121,7 @@ function getNonPawnDisambiguation(
   return `${getLetter(move.x)}${getRank(move.y)}`
 }
 
-/** Get the name of the given move */
+/** Converts a move to standard algebraic notation (SAN) */
 export function getNotation(
   move: Omit<Move, "notation">,
   state: State,

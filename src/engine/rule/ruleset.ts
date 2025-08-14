@@ -58,7 +58,10 @@ const pieceValueRecord = {
   k: Infinity,
 }
 
-// Helper function to check if path is clear for sliding pieces
+/**
+ * Checks if the path between two positions is clear of pieces for sliding
+ * pieces
+ */
 function isPathClear(
   x: number,
   y: number,
@@ -83,6 +86,7 @@ function isPathClear(
   return true
 }
 
+/** Determines if a pawn can legally move from one position to another */
 export function canPawnMoveTo(
   fromX: number,
   fromY: number,
@@ -125,7 +129,7 @@ export function canPawnMoveTo(
   return false
 }
 
-// Helper function to check if a piece can move to a destination
+/** Checks if a piece can legally move to a destination square */
 export function canPieceMoveTo(
   x: number,
   y: number,
@@ -134,7 +138,8 @@ export function canPieceMoveTo(
   kind: EntityKind,
   state: State,
 ): boolean {
-  // This is a simplified version - you might want to import and use the actual movement validation from ruleset.ts
+  // This is a simplified version - you might want to import and use the actual
+  // movement validation from ruleset.ts
   const dx = nx - x
   const dy = ny - y
 
@@ -162,6 +167,10 @@ export function canPieceMoveTo(
   }
 }
 
+/**
+ * Determines if a piece at a given position can attack a specific target
+ * square
+ */
 export function canPieceAttackSquare(
   x: number,
   y: number,
@@ -202,6 +211,7 @@ export function canPieceAttackSquare(
   })
 }
 
+/** Checks if a target square is under attack by pieces of a specified color */
 export function isUnderAttack(
   targetX: number,
   targetY: number,

@@ -3,6 +3,7 @@ import { isUnderAttack } from "../rule/ruleset"
 import { findAllInBoard } from "../util/boardUtil"
 import { oppositeTurn } from "../util/turnUtil"
 
+/** Creates and returns the initial game state with the starting board position */
 export function initialState(): State {
   return {
     board: initialBoard(),
@@ -13,6 +14,7 @@ export function initialState(): State {
   }
 }
 
+/** Applies a move to the current state and returns the new state after the move */
 export function applyMoveToState(move: Move, state: State): State {
   // Create a deep copy of the board
   const newBoard: Board = state.board.map((row) => [...row])
@@ -91,6 +93,7 @@ export function applyMoveToState(move: Move, state: State): State {
   }
 }
 
+/** Checks if the current player's king is in check */
 export function kingIsInCheck(state: State): boolean {
   // Find the king's position - look for the king of the current player
   const kingLetter = state.turn === "white" ? "k" : "K"

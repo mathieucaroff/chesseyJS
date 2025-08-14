@@ -4,6 +4,7 @@ import { applyMoveToState, kingIsInCheck } from "../state/state"
 import { forEachInBoard, inbound } from "../util/boardUtil"
 import { oppositeTurn, readCaseToTurn } from "../util/turnUtil"
 
+/** Generates all legal moves available for the current player in the given state */
 export function getAvailableMoveList(
   state: State,
   withNotation: boolean,
@@ -70,8 +71,8 @@ export function getAvailableMoveList(
     ;[...deltaList, ...deltaList.map(([dx, dy]) => [-dx, -dy])].forEach(
       ([dx, dy]) => {
         // Handle piece walk, for rooks, bishops and queen(s)
-        // The piece can move in the given direction until it hits the edge of the board
-        // or an ally piece.
+        // The piece can move in the given direction until it hits the edge of
+        // the board or an ally piece.
         let nx = x
         let ny = y
         for (let k = 0; k < (repeat ? 8 : 1); k++) {

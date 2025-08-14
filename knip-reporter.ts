@@ -2,8 +2,10 @@ import { ReporterOptions } from "knip"
 import { ISSUE_TYPE_TITLE } from "knip/dist/constants"
 import { Issue, IssueRecords } from "knip/dist/types/issues"
 
-/** This file is used to customize the shape of the output of knip. */
-
+/**
+ * Custom knip reporter that formats code analysis output with improved
+ * formatting for unlisted dependencies
+ */
 export default function (options: ReporterOptions) {
   Object.entries(ISSUE_TYPE_TITLE).forEach(([issueType, title]) => {
     const key = issueType as keyof typeof ISSUE_TYPE_TITLE
@@ -29,6 +31,10 @@ export default function (options: ReporterOptions) {
   })
 }
 
+/**
+ * Groups unlisted dependencies by symbol and formats them with occurrence
+ * counts
+ */
 function manageUnlistedDependencies(record: IssueRecords) {
   const issueBySymbol = {} as Record<string, (Issue & { filename: string })[]>
   Object.entries(record).forEach(([filename, issueObject]) => {

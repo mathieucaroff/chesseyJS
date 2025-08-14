@@ -80,6 +80,7 @@ describe("Notation Module", () => {
     test("should return correct notation for pawn promotion", () => {
       // Create empty board for non-capture promotion test
       const emptyBoard = makeEmptyBoard()
+      emptyBoard[0][0] = "K" // Black king at a1
 
       const state: State = {
         board: emptyBoard,
@@ -121,6 +122,7 @@ describe("Notation Module", () => {
       emptyBoard[0][1] = "n" // White knight at b1
       emptyBoard[0][3] = "n" // White knight at d1
       emptyBoard[4][4] = "k" // White king at e5
+      emptyBoard[0][0] = "K" // Black king at a1
 
       const state: State = {
         board: emptyBoard,
@@ -149,6 +151,7 @@ describe("Notation Module", () => {
       emptyBoard[2][2] = "n" // White knight at c3
       emptyBoard[3][4] = "P" // Black piece at e4 to capture
       emptyBoard[4][4] = "k" // White king at e5
+      emptyBoard[0][0] = "K" // Black king at a1
 
       const state: State = {
         board: emptyBoard,
@@ -176,6 +179,7 @@ describe("Notation Module", () => {
       emptyBoard[3][4] = "p" // White pawn at e4
       emptyBoard[4][3] = "P" // Black piece at d5 to capture
       emptyBoard[0][0] = "k" // White king at a1
+      emptyBoard[7][7] = "K" // Black king at h8
 
       const state: State = {
         board: emptyBoard,
@@ -202,6 +206,7 @@ describe("Notation Module", () => {
       const emptyBoard = makeEmptyBoard()
       emptyBoard[3][4] = "p" // White pawn at e4
       emptyBoard[0][0] = "k" // White king at a1
+      emptyBoard[7][7] = "K" // Black king at h8
 
       const state: State = {
         board: emptyBoard,
@@ -268,6 +273,7 @@ describe("Notation Module", () => {
     test("should handle promotion to different pieces", () => {
       // Create empty board for non-capture promotion test
       const emptyBoard = makeEmptyBoard()
+      emptyBoard[4][7] = "K" // Black king at h8
 
       const state: State = {
         board: emptyBoard,

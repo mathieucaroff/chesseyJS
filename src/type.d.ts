@@ -45,14 +45,14 @@ declare global {
     | "longPawnMove"
 
   interface State {
-    // A 2D array of strings, each string representing a single square on the board.
-    // `_` represents an empty square. There are eight rows and each row
+    // A 2D array of strings, each string representing a single square on the
+    // board. `_` represents an empty square. There are eight rows and each row
     // has eight single-character strings.
     board: Board
     // Which player's turn is it (0 = white, 1 = black)
     turn: Turn
-    // 0-7 index of the column of the pawn which just advanced two squares, if any.
-    // -1 otherwise
+    // 0-7 index of the column of the pawn which just advanced two squares, if
+    // any. -1 otherwise
     enPassant: number
     // Castle possibilites
     whiteCanCastle: Castle

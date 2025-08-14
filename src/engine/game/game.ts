@@ -1,3 +1,4 @@
+/** Creates a new game instance from the provided history and state */
 export function createGame(history: GameHistory, state: State): Game {
   return {
     history,
