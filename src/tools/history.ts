@@ -1,6 +1,6 @@
 import { applyMoveToState, initialState } from "../engine/state/state"
 import { canPieceMoveTo } from "../engine/rule/ruleset"
-import { applyTurnToCase } from "../engine/util/turnUtil"
+import { applyTurnToCase, readCaseToTurn } from "../engine/util/turnUtil"
 
 /** Checks if a text string is empty or contains only whitespace */
 function isEmpty(text: string) {
@@ -82,6 +82,36 @@ export function parseNotation(notation: string, state: State): Move {
   const nx = toSquare.charCodeAt(0) - 97
   const ny = Number(toSquare[1]) - 1
 
+  // Check that the destination square is empty or contains an opponent's piece
+  if (kind === "p") {
+    if (isCapture) {
+      // En passant: destination square is empty, but enPassant is set
+      if (state.board[ny][nx] === "_" && state.enPassant === nx) {
+        special = "enPassant"
+      } else if (state.board[ny][nx] === "_") {
+        throw new Error(`Capturing an empty square: ${notation}`)
+      } else if (readCaseToTurn(state.board[ny][nx]) === state.turn) {
+        throw new Error(`Capturing own piece: ${notation}`)
+      }
+    } else {
+      // Pawn move: must be empty
+      if (state.board[ny][nx] !== "_") {
+        throw new Error(`Collision: ${notation}`)
+      }
+    }
+  } else {
+    if (!isCapture && state.board[ny][nx] !== "_") {
+      throw new Error(`Collision (move is not a capture): ${notation}`)
+    } else if (isCapture) {
+      const nCharacter = state.board[ny][nx]
+      if (nCharacter === "_") {
+        throw new Error(`Capturing an empty square: ${notation}`)
+      } else if (readCaseToTurn(nCharacter) === state.turn) {
+        throw new Error(`Capturing own piece: ${notation}`)
+      }
+    }
+  }
+
   // promotion
   if (short.includes("=")) {
     special = "promotion"
@@ -124,20 +154,21 @@ export function parseNotation(notation: string, state: State): Move {
       if (disambiguatedCaptureMatch) {
         x = disambiguatedCaptureMatch[1].charCodeAt(0) - 97
       } else {
-        // No disambiguation, check both possible position of the pawn
-        // which did the capture
-        if (state.board[y][x + 1] === character) {
-          x = x + 1
-        } else if (state.board[y][x - 1] === character) {
-          x = x - 1
-        } else {
+        // No disambiguation, check both possible positions for the pawn
+        let found = false
+        for (let dx of [-1, 1]) {
+          const px = nx + dx
+          if (px >= 0 && px < 8 && state.board[y][px] === character) {
+            x = px
+            found = true
+            break
+          }
+        }
+        if (!found) {
           throw new Error(`Invalid move ${notation}`)
         }
       }
-      // enPassant
-      if (state.enPassant === nx && state.board[ny][nx] === "_") {
-        special = "enPassant"
-      }
+      // enPassant already set above if needed
     } else {
       // Regular pawn move
       x = nx
@@ -146,11 +177,21 @@ export function parseNotation(notation: string, state: State): Move {
 
       if (state.board[oneMoveY]?.[x] === applyTurnToCase(state.turn, "p")) {
         y = oneMoveY
+        // Blocked check: must be empty
+        if (state.board[ny][nx] !== "_") {
+          throw new Error(`Collision: ${notation}`)
+        }
       } else if (
         state.board[twoMoveY]?.[x] === applyTurnToCase(state.turn, "p")
       ) {
         y = twoMoveY
+        // Blocked check: must be empty for both squares
+        if (state.board[oneMoveY][x] !== "_" || state.board[ny][nx] !== "_") {
+          throw new Error(`Collision: ${notation}`)
+        }
         special = "longPawnMove"
+      } else {
+        throw new Error(`Invalid move ${notation}`)
       }
     }
   } else {

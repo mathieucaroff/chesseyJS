@@ -154,6 +154,25 @@ describe("History Module", () => {
         })
       })
 
+      test("should not allow pawn to move one square forward if blocked", () => {
+        // Place a piece directly in front of the white pawn on e2
+        state.board[2][4] = "N" // Any piece blocks
+        expect(() => parseNotation("e3", state)).toThrow()
+      })
+
+      test("should not allow pawn to move two squares forward if blocked on first square", () => {
+        // Place a piece directly in front of the white pawn on e2 (e3)
+        state.board[2][4] = "N"
+        expect(() => parseNotation("e4", state)).toThrow()
+      })
+
+      test("should not allow pawn to move two squares forward if blocked on second square", () => {
+        // Place a piece two squares in front of the white pawn on e2 (e4)
+        state.board[2][4] = "_"
+        state.board[3][4] = "N"
+        expect(() => parseNotation("e4", state)).toThrow()
+      })
+
       test("should parse pawn capture", () => {
         // Set up a position where white pawn can capture
         state.board[2][5] = "P" // Black pawn on f3
