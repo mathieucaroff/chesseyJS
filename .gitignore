@@ -1,7 +1,7 @@
 /*/
 .*
 
-!/asset/
+!/doc/
 !/src/
 !.editorconfig
 !.env.example
